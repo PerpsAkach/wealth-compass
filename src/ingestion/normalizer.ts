@@ -10,6 +10,11 @@ export interface RawTransaction {
   source?: string;
 }
 
+export interface NormalizationResult {
+  transactions: Transaction[];
+  errors: string[];
+}
+
 function normalizeDate(raw: string): string {
   const value = raw.trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
@@ -66,4 +71,20 @@ export function normalizeRawTransaction(raw: RawTransaction): Transaction {
     balance: raw.balance,
     source: raw.source,
   };
+}
+
+export function normalizeTransactions(rawTransactions: RawTransaction[]): NormalizationResult {
+  const transactions: Transaction[] = [];
+  const errors: string[] = [];
+
+  rawTransactions.forEach((raw, index) => {
+    try {
+      transactions.push(normalizeRawTransaction(raw));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      errors.push(`Row ${index + 1}: ${message}`);
+    }
+  });
+
+  return { transactions, errors };
 }
