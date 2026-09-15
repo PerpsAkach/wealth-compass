@@ -17,7 +17,7 @@ h1 { margin: 10px 0 14px; font-size: clamp(2.6rem, 7vw, 5.8rem); line-height: 0.
 h2 { margin: 8px 0 0; font-size: clamp(1.6rem, 4vw, 2.4rem); }
 .hero p { max-width: 760px; color: #b7c3bb; line-height: 1.65; font-size: 1.02rem; }
 .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 26px; }
-#csv-file { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.file-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .button { border: 1px solid #34443b; border-radius: 999px; padding: 12px 18px; font-weight: 750; text-decoration: none; }
 .button.primary { background: #b8f36b; color: #0c110e; border-color: #b8f36b; }
 .button.secondary { background: transparent; color: #ecf3ee; }
