@@ -3,6 +3,24 @@ import type {
   InvestmentScenario,
 } from "../domain/models";
 
+function assertFiniteNonNegative(value: number, field: string): void {
+  if (!Number.isFinite(value) || value < 0) {
+    throw new Error(`${field} must be a finite non-negative number`);
+  }
+}
+
+function validateScenario(scenario: InvestmentScenario): void {
+  assertFiniteNonNegative(scenario.initialPrincipal, "initialPrincipal");
+  assertFiniteNonNegative(scenario.monthlyContribution, "monthlyContribution");
+
+  if (!Number.isFinite(scenario.years) || scenario.years <= 0) {
+    throw new Error("years must be a finite positive number");
+  }
+  if (!Number.isFinite(scenario.annualReturnAssumption) || scenario.annualReturnAssumption <= -1) {
+    throw new Error("annualReturnAssumption must be finite and greater than -1");
+  }
+}
+
 function monthlyFutureValue(
   principal: number,
   monthlyContribution: number,
@@ -25,12 +43,14 @@ function monthlyFutureValue(
 /**
  * Scenario comparison only.
  *
- * Return assumptions are supplied by the user/caller. The application does
- * not label one scenario as a guaranteed investment outcome.
+ * Return assumptions are supplied by the user/caller as decimal annual rates
+ * (for example, 0.06 means 6%). The application does not label one scenario
+ * as a guaranteed investment outcome.
  */
 export function projectInvestmentScenario(
   scenario: InvestmentScenario,
 ): InvestmentProjection {
+  validateScenario(scenario);
   const months = Math.round(scenario.years * 12);
 
   const futureValue = monthlyFutureValue(
