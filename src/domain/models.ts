@@ -33,6 +33,7 @@ export interface SpendingDeviation {
   currentAmount: number;
   baselineMedian: number;
   baselineMAD: number;
+  baselineObservations: number;
   robustScore: number;
   severity: "normal" | "watch" | "high";
 }
