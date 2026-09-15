@@ -41,9 +41,10 @@ export function buildRecommendationCandidates(
         evidence: [
           `Current: ${deviation.currentAmount.toFixed(2)}`,
           `Baseline median: ${deviation.baselineMedian.toFixed(2)}`,
+          `Historical months: ${deviation.baselineObservations}`,
         ],
         signalStrength: Math.min(1, Math.abs(deviation.robustScore) / 5),
-        dataPoints: 6,
+        dataPoints: deviation.baselineObservations,
       });
     }
   }
