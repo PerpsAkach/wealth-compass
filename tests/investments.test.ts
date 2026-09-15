@@ -28,4 +28,38 @@ describe("investment scenario projection", () => {
     expect(result.futureValue).toBeGreaterThan(result.totalContributions);
     expect(result.estimatedGrowth).toBeGreaterThan(0);
   });
+
+  it("rejects non-finite, negative-capital, invalid-horizon, and impossible return assumptions", () => {
+    expect(() => projectInvestmentScenario({
+      name: "Negative capital",
+      initialPrincipal: -1,
+      monthlyContribution: 100,
+      annualReturnAssumption: 0.06,
+      years: 1,
+    })).toThrow("initialPrincipal");
+
+    expect(() => projectInvestmentScenario({
+      name: "No horizon",
+      initialPrincipal: 1000,
+      monthlyContribution: 100,
+      annualReturnAssumption: 0.06,
+      years: 0,
+    })).toThrow("years");
+
+    expect(() => projectInvestmentScenario({
+      name: "Impossible return",
+      initialPrincipal: 1000,
+      monthlyContribution: 100,
+      annualReturnAssumption: -1,
+      years: 1,
+    })).toThrow("annualReturnAssumption");
+
+    expect(() => projectInvestmentScenario({
+      name: "Non-finite contribution",
+      initialPrincipal: 1000,
+      monthlyContribution: Number.NaN,
+      annualReturnAssumption: 0.06,
+      years: 1,
+    })).toThrow("monthlyContribution");
+  });
 });
