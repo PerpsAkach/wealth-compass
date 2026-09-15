@@ -3,6 +3,45 @@ import type {
   GoalProjection,
 } from "../domain/models";
 
+function assertFiniteNonNegative(value: number, field: string): void {
+  if (!Number.isFinite(value) || value < 0) {
+    throw new Error(`${field} must be a finite non-negative number`);
+  }
+}
+
+function parseTargetDate(value: string): Date {
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) throw new Error("targetDate must use YYYY-MM-DD format");
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const target = new Date(Date.UTC(year, month - 1, day));
+
+  if (
+    target.getUTCFullYear() !== year
+    || target.getUTCMonth() !== month - 1
+    || target.getUTCDate() !== day
+  ) {
+    throw new Error("targetDate must be a valid calendar date");
+  }
+
+  return target;
+}
+
+function validateGoal(goal: FinancialGoal, now: Date): void {
+  assertFiniteNonNegative(goal.targetAmount, "targetAmount");
+  assertFiniteNonNegative(goal.currentAmount, "currentAmount");
+
+  const annualReturn = goal.annualReturnAssumption ?? 0;
+  if (!Number.isFinite(annualReturn) || annualReturn <= -1) {
+    throw new Error("annualReturnAssumption must be finite and greater than -1");
+  }
+  if (Number.isNaN(now.getTime())) {
+    throw new Error("now must be a valid date");
+  }
+}
+
 function monthsBetween(now: Date, target: Date): number {
   const months =
     (target.getUTCFullYear() - now.getUTCFullYear()) * 12 +
@@ -39,7 +78,8 @@ export function projectGoal(
   goal: FinancialGoal,
   now = new Date(),
 ): GoalProjection {
-  const target = new Date(`${goal.targetDate}T00:00:00Z`);
+  validateGoal(goal, now);
+  const target = parseTargetDate(goal.targetDate);
   const months = monthsBetween(now, target);
   const annualReturn = goal.annualReturnAssumption ?? 0;
 
