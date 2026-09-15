@@ -49,6 +49,14 @@ describe("normalizeRawTransaction", () => {
     })).toThrow("Invalid date");
   });
 
+  it("rejects ambiguous date formats outside the documented input contract", () => {
+    expect(() => normalizeRawTransaction({
+      date: "January 2, 2026",
+      description: "AMBIGUOUS DATE",
+      amount: -10,
+    })).toThrow("Invalid date");
+  });
+
   it("keeps valid rows while reporting invalid rows during batch normalization", () => {
     const result = normalizeTransactions([
       { date: "02/28/2025", description: "VALID", amount: -10 },
