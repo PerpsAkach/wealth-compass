@@ -33,14 +33,19 @@ Modern portfolio-quality enhancements include:
 - a runnable Vite browser demo;
 - direct searchable-PDF upload through browser-only PDF.js;
 - conservative generic PDF transaction parsing with explicit limitations;
-- bundled fictional sample data;
-- strict calendar-date validation;
+- bundled fictional sample data that is included in the production bundle;
+- deterministic statement-date parsing with strict calendar validation;
 - accounting-style CSV amount support and UTF-8 BOM handling;
+- spending-deviation calibration that does not label a first-observed category as a statistical anomaly;
+- recommendation confidence that uses the actual available baseline-history depth rather than assuming six months;
+- validation of financial-goal and investment-scenario numeric, date, horizon, and return-assumption inputs;
 - expanded unit and ingestion-to-analysis integration tests;
 - deterministic dependency resolution with `package-lock.json` and `npm ci`;
 - dependency auditing in GitHub Actions;
 - Node.js 24 CI and production build validation;
-- explicit input-contract, privacy, financial-safety, and implementation-limit documentation.
+- browser privacy messaging and accessibility cues for status/table output;
+- explicit input-contract, privacy, financial-safety, and implementation-limit documentation;
+- page metadata aligned with the current CSV/searchable-PDF browser demo.
 
 ## Unverified boundary
 
@@ -50,6 +55,7 @@ Unless supported by recovered artifacts, this repository does not claim:
 - an exact historical UI implementation;
 - production-grade financial-data storage or bank connectivity;
 - universal PDF statement compatibility;
+- OCR support for image-only statements;
 - regulated financial advice or autonomous investment execution.
 
 The public portfolio should describe current enhanced functionality as **current portfolio functionality**, while preserving the distinction between recovered project history and reconstructed/enhanced engineering.
