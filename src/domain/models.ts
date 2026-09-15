@@ -37,6 +37,38 @@ export interface SpendingDeviation {
   severity: "normal" | "watch" | "high";
 }
 
+export interface FinancialGoal {
+  id: string;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+  targetDate: string;
+  annualReturnAssumption?: number;
+}
+
+export interface GoalProjection {
+  goalId: string;
+  monthsRemaining: number;
+  fundingGap: number;
+  requiredMonthlyContribution: number;
+  projectedAmountAtTarget: number;
+}
+
+export interface InvestmentScenario {
+  name: string;
+  initialPrincipal: number;
+  monthlyContribution: number;
+  annualReturnAssumption: number;
+  years: number;
+}
+
+export interface InvestmentProjection {
+  scenario: InvestmentScenario;
+  futureValue: number;
+  totalContributions: number;
+  estimatedGrowth: number;
+}
+
 export type RecommendationType =
   | "cash-flow"
   | "spending-deviation"
