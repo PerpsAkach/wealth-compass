@@ -2,6 +2,10 @@ import type { CategoryBaseline, SpendingDeviation, Transaction } from "../domain
 import { spendingByCategory } from "./cashFlow";
 
 function robustScore(current: number, baseline: CategoryBaseline): number {
+  // A first-observed category has no historical baseline. Treat it as
+  // insufficient history rather than fabricating a high-severity anomaly.
+  if (baseline.observations === 0) return 0;
+
   if (baseline.mad > 0) {
     return 0.6745 * (current - baseline.median) / baseline.mad;
   }
@@ -37,8 +41,9 @@ export function detectSpendingDeviations(
       currentAmount,
       baselineMedian: baseline.median,
       baselineMAD: baseline.mad,
+      baselineObservations: baseline.observations,
       robustScore: score,
       severity: magnitude >= 3 ? "high" : magnitude >= 1.5 ? "watch" : "normal",
-    } as SpendingDeviation;
+    };
   });
 }
