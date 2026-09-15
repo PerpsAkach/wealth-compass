@@ -1,4 +1,5 @@
 import "./ui/styles.css";
+import sampleTransactionsCsv from "../sample_data/sample_transactions.csv?raw";
 import { parseCsvStatement } from "./ingestion/csvParser";
 import { extractSearchablePdfText } from "./ingestion/pdfBrowserParser";
 import { parsePdfTransactions } from "./ingestion/pdfTransactionParser";
@@ -171,13 +172,11 @@ pdfInput.addEventListener("change", async () => {
   }
 });
 
-sampleButton.addEventListener("click", async () => {
+sampleButton.addEventListener("click", () => {
   hideResults();
   status.textContent = "Loading fictional sample data...";
   try {
-    const response = await fetch("/sample_data/sample_transactions.csv");
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    renderRawTransactions(parseCsvStatement(await response.text()), "fictional sample data");
+    renderRawTransactions(parseCsvStatement(sampleTransactionsCsv), "fictional sample data");
   } catch (error) {
     status.textContent = `Unable to load sample data: ${error instanceof Error ? error.message : String(error)}`;
   }
