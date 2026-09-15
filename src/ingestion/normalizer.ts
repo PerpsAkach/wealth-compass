@@ -15,15 +15,38 @@ export interface NormalizationResult {
   errors: string[];
 }
 
+function isoDate(year: number, month: number, day: number, raw: string): string {
+  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) {
+    throw new Error(`Invalid date: ${raw}`);
+  }
+
+  const candidate = new Date(Date.UTC(year, month - 1, day));
+  if (
+    candidate.getUTCFullYear() !== year
+    || candidate.getUTCMonth() !== month - 1
+    || candidate.getUTCDate() !== day
+  ) {
+    throw new Error(`Invalid date: ${raw}`);
+  }
+
+  return `${year.toString().padStart(4, "0")}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
+}
+
 function normalizeDate(raw: string): string {
   const value = raw.trim();
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+
+  const iso = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) {
+    return isoDate(Number(iso[1]), Number(iso[2]), Number(iso[3]), raw);
+  }
+
   const us = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/);
   if (us) {
     const [, mm, dd, yy] = us;
     const year = yy.length === 2 ? Number(yy) + 2000 : Number(yy);
-    return `${year.toString().padStart(4, "0")}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}`;
+    return isoDate(year, Number(mm), Number(dd), raw);
   }
+
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) throw new Error(`Invalid date: ${raw}`);
   return parsed.toISOString().slice(0, 10);
