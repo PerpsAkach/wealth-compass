@@ -34,9 +34,10 @@ export function parsePdfTransactions(
 
   for (const page of pages) {
     // Searchable PDFs often lose visual rows when text is flattened.
-    // Split at date boundaries to recover likely transaction records.
+    // Split at date boundaries, but do not match a second boundary inside
+    // a two-digit month (for example the "1" within "01/02/2026").
     const chunks = page.text
-      .split(/(?=\d{1,2}\/\d{1,2}\/\d{2,4}\s)/)
+      .split(/(?<!\d)(?=\d{1,2}\/\d{1,2}\/\d{2,4}\s)/)
       .map((s) => s.trim())
       .filter(Boolean);
 
