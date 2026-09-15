@@ -5,15 +5,19 @@ type CsvRow = Record<string, string | undefined>;
 
 function parseNumber(value: string | undefined): number | undefined {
   if (value === undefined) return undefined;
-  const cleaned = value.replace(/[$,]/g, "").trim();
-  if (!cleaned) return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+
+  const negativeByParens = trimmed.startsWith("(") && trimmed.endsWith(")");
+  const cleaned = trimmed.replace(/[$,()]/g, "");
   const parsed = Number(cleaned);
-  return Number.isFinite(parsed) ? parsed : undefined;
+  if (!Number.isFinite(parsed)) return undefined;
+  return negativeByParens ? -Math.abs(parsed) : parsed;
 }
 
 function get(row: CsvRow, ...keys: string[]): string | undefined {
   const normalized = new Map(
-    Object.entries(row).map(([key, value]) => [key.trim().toLowerCase(), value]),
+    Object.entries(row).map(([key, value]) => [key.replace(/^\uFEFF/, "").trim().toLowerCase(), value]),
   );
   for (const key of keys) {
     const value = normalized.get(key.toLowerCase());
@@ -26,7 +30,7 @@ export function parseCsvStatement(csvText: string): RawTransaction[] {
   const parsed = Papa.parse<CsvRow>(csvText, {
     header: true,
     skipEmptyLines: "greedy",
-    transformHeader: (header) => header.trim(),
+    transformHeader: (header) => header.replace(/^\uFEFF/, "").trim(),
   });
 
   if (parsed.errors.length > 0 && parsed.data.length === 0) {
