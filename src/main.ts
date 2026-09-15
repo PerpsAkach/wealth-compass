@@ -1,6 +1,8 @@
 import "./ui/styles.css";
 import { parseCsvStatement } from "./ingestion/csvParser";
-import { normalizeTransactions } from "./ingestion/normalizer";
+import { extractSearchablePdfText } from "./ingestion/pdfBrowserParser";
+import { parsePdfTransactions } from "./ingestion/pdfTransactionParser";
+import { normalizeTransactions, type RawTransaction } from "./ingestion/normalizer";
 import { categorizeTransactions } from "./analytics/categorizer";
 import { analyzeWealthCompass } from "./pipeline";
 
@@ -12,16 +14,18 @@ app.innerHTML = `
     <header class="hero">
       <span class="eyebrow">PERSONAL FINANCE ANALYTICS · PORTFOLIO RECONSTRUCTION</span>
       <h1>Wealth Compass</h1>
-      <p>Import a CSV statement to transform raw transactions into normalized records, monthly cash-flow summaries, spending deviations, and evidence-based recommendation signals.</p>
+      <p>Import a CSV statement or a searchable PDF statement to transform raw transactions into normalized records, monthly cash-flow summaries, spending deviations, and evidence-based recommendation signals.</p>
       <div class="actions">
         <label class="button primary" for="csv-file">Choose CSV statement</label>
-        <input id="csv-file" type="file" accept=".csv,text/csv" />
+        <input class="file-input" id="csv-file" type="file" accept=".csv,text/csv" />
+        <label class="button secondary" for="pdf-file">Choose searchable PDF</label>
+        <input class="file-input" id="pdf-file" type="file" accept=".pdf,application/pdf" />
         <button class="button secondary" id="load-sample" type="button">Load fictional sample</button>
       </div>
-      <p class="scope">Demo only. No bank connection, tax filing, trading, or autonomous financial advice.</p>
+      <p class="scope">Demo only. PDF support uses a conservative generic searchable-text parser and will not recognize every bank statement layout. No bank connection, tax filing, trading, or autonomous financial advice.</p>
     </header>
 
-    <section id="status" class="status-card">Choose a CSV file or load the fictional sample dataset.</section>
+    <section id="status" class="status-card">Choose a CSV/PDF file or load the fictional sample dataset.</section>
 
     <section id="summary" class="section hidden">
       <div class="section-heading"><span class="eyebrow">LATEST MONTH</span><h2>Cash-flow snapshot</h2></div>
@@ -45,9 +49,16 @@ app.innerHTML = `
   </div>
 `;
 
-const fileInput = document.querySelector<HTMLInputElement>("#csv-file")!;
+const csvInput = document.querySelector<HTMLInputElement>("#csv-file")!;
+const pdfInput = document.querySelector<HTMLInputElement>("#pdf-file")!;
 const sampleButton = document.querySelector<HTMLButtonElement>("#load-sample")!;
 const status = document.querySelector<HTMLElement>("#status")!;
+const resultSections = [
+  "#summary",
+  "#recommendations-section",
+  "#cashflow-section",
+  "#transactions-section",
+];
 
 function money(value: number): string {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value);
@@ -57,27 +68,44 @@ function percent(value: number | null): string {
   return value === null ? "—" : `${(value * 100).toFixed(1)}%`;
 }
 
-function show(selector: string): void {
-  document.querySelector<HTMLElement>(selector)?.classList.remove("hidden");
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
+  })[char] ?? char);
 }
 
-function render(csvText: string, sourceLabel: string): void {
+function showResults(): void {
+  resultSections.forEach((selector) => document.querySelector<HTMLElement>(selector)?.classList.remove("hidden"));
+}
+
+function hideResults(): void {
+  resultSections.forEach((selector) => document.querySelector<HTMLElement>(selector)?.classList.add("hidden"));
+}
+
+function renderRawTransactions(raw: RawTransaction[], sourceLabel: string): void {
+  hideResults();
+
   try {
-    const raw = parseCsvStatement(csvText);
     const normalized = normalizeTransactions(raw);
     const transactions = categorizeTransactions(normalized.transactions);
     const analysis = analyzeWealthCompass(transactions);
     const latest = analysis.cashFlow[analysis.cashFlow.length - 1];
 
     if (!latest) {
-      status.textContent = "No valid transactions were found in this file.";
+      status.textContent = normalized.errors.length
+        ? `No valid transactions were found in ${sourceLabel}. ${normalized.errors.length} row(s) failed normalization.`
+        : `No valid transactions were found in ${sourceLabel}.`;
       return;
     }
 
     status.textContent = `Analyzed ${transactions.length} transactions from ${sourceLabel}. ${normalized.errors.length ? `${normalized.errors.length} row(s) were skipped during normalization.` : "All parsed rows normalized successfully."}`;
 
     document.querySelector<HTMLElement>("#metrics")!.innerHTML = `
-      <article class="metric"><span>Month</span><strong>${latest.month}</strong></article>
+      <article class="metric"><span>Month</span><strong>${escapeHtml(latest.month)}</strong></article>
       <article class="metric"><span>Income</span><strong>${money(latest.income)}</strong></article>
       <article class="metric"><span>Expenses</span><strong>${money(latest.expenses)}</strong></article>
       <article class="metric"><span>Net cash flow</span><strong>${money(latest.netCashFlow)}</strong></article>
@@ -87,41 +115,69 @@ function render(csvText: string, sourceLabel: string): void {
     document.querySelector<HTMLElement>("#recommendations")!.innerHTML = analysis.recommendations.length
       ? analysis.recommendations.map((rec) => `
           <article class="recommendation">
-            <div class="recommendation-top"><strong>${rec.title}</strong><span>${rec.priority} · ${(rec.confidence * 100).toFixed(0)}% confidence</span></div>
-            <p>${rec.message}</p>
-            <small>${rec.evidence.join(" · ")}</small>
+            <div class="recommendation-top"><strong>${escapeHtml(rec.title)}</strong><span>${escapeHtml(rec.priority)} · ${(rec.confidence * 100).toFixed(0)}% confidence</span></div>
+            <p>${escapeHtml(rec.message)}</p>
+            <small>${rec.evidence.map(escapeHtml).join(" · ")}</small>
           </article>
         `).join("")
       : `<p class="muted">No recommendation rules fired for the selected data.</p>`;
 
     document.querySelector<HTMLElement>("#cashflow-body")!.innerHTML = analysis.cashFlow.map((row) => `
-      <tr><td>${row.month}</td><td>${money(row.income)}</td><td>${money(row.expenses)}</td><td>${money(row.netCashFlow)}</td><td>${percent(row.savingsRate)}</td></tr>
+      <tr><td>${escapeHtml(row.month)}</td><td>${money(row.income)}</td><td>${money(row.expenses)}</td><td>${money(row.netCashFlow)}</td><td>${percent(row.savingsRate)}</td></tr>
     `).join("");
 
     document.querySelector<HTMLElement>("#transactions-body")!.innerHTML = transactions.slice().reverse().map((tx) => `
-      <tr><td>${tx.date}</td><td>${tx.description}</td><td>${tx.category}</td><td>${tx.direction}</td><td>${money(tx.amount)}</td></tr>
+      <tr><td>${escapeHtml(tx.date)}</td><td>${escapeHtml(tx.description)}</td><td>${escapeHtml(tx.category)}</td><td>${escapeHtml(tx.direction)}</td><td>${money(tx.amount)}</td></tr>
     `).join("");
 
-    show("#summary");
-    show("#recommendations-section");
-    show("#cashflow-section");
-    show("#transactions-section");
+    showResults();
   } catch (error) {
-    status.textContent = `Unable to analyze this CSV: ${error instanceof Error ? error.message : String(error)}`;
+    status.textContent = `Unable to analyze ${sourceLabel}: ${error instanceof Error ? error.message : String(error)}`;
   }
 }
 
-fileInput.addEventListener("change", async () => {
-  const file = fileInput.files?.[0];
+csvInput.addEventListener("change", async () => {
+  const file = csvInput.files?.[0];
   if (!file) return;
-  render(await file.text(), file.name);
+
+  hideResults();
+  status.textContent = `Reading ${file.name}...`;
+  try {
+    renderRawTransactions(parseCsvStatement(await file.text()), file.name);
+  } catch (error) {
+    status.textContent = `Unable to parse this CSV: ${error instanceof Error ? error.message : String(error)}`;
+  } finally {
+    csvInput.value = "";
+  }
+});
+
+pdfInput.addEventListener("change", async () => {
+  const file = pdfInput.files?.[0];
+  if (!file) return;
+
+  hideResults();
+  status.textContent = `Extracting searchable text from ${file.name}...`;
+  try {
+    const pages = await extractSearchablePdfText(file);
+    const raw = parsePdfTransactions(pages);
+    if (raw.length === 0) {
+      throw new Error("searchable text was extracted, but no transactions matched the conservative generic PDF pattern");
+    }
+    renderRawTransactions(raw, `${file.name} (${pages.length} PDF page${pages.length === 1 ? "" : "s"})`);
+  } catch (error) {
+    status.textContent = `Unable to parse this PDF: ${error instanceof Error ? error.message : String(error)}`;
+  } finally {
+    pdfInput.value = "";
+  }
 });
 
 sampleButton.addEventListener("click", async () => {
+  hideResults();
+  status.textContent = "Loading fictional sample data...";
   try {
     const response = await fetch("/sample_data/sample_transactions.csv");
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    render(await response.text(), "fictional sample data");
+    renderRawTransactions(parseCsvStatement(await response.text()), "fictional sample data");
   } catch (error) {
     status.textContent = `Unable to load sample data: ${error instanceof Error ? error.message : String(error)}`;
   }
