@@ -15,8 +15,14 @@ function assertBrowserPdfEnvironment(): void {
 export async function extractSearchablePdfText(file: File): Promise<ExtractedPdfPage[]> {
   assertBrowserPdfEnvironment();
 
-  // Dynamic import is intentional: PDF.js must not initialize in the server runtime.
-  const pdfjs = await import("pdfjs-dist");
+  // Dynamic imports are intentional: PDF.js must initialize only in a browser
+  // runtime, and the worker URL is resolved by Vite rather than hard-coded.
+  const [pdfjs, workerModule] = await Promise.all([
+    import("pdfjs-dist"),
+    import("pdfjs-dist/build/pdf.worker.min.mjs?url"),
+  ]);
+  pdfjs.GlobalWorkerOptions.workerSrc = workerModule.default;
+
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
   const pages: ExtractedPdfPage[] = [];
@@ -25,7 +31,11 @@ export async function extractSearchablePdfText(file: File): Promise<ExtractedPdf
     const page = await pdf.getPage(pageNumber);
     const content = await page.getTextContent();
     const text = content.items
-      .map((item: any) => ("str" in item ? String(item.str) : ""))
+      .map((item: unknown) => (
+        typeof item === "object" && item !== null && "str" in item
+          ? String((item as { str: unknown }).str)
+          : ""
+      ))
       .filter(Boolean)
       .join(" ")
       .replace(/\s+/g, " ")
