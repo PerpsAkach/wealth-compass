@@ -47,9 +47,7 @@ function normalizeDate(raw: string): string {
     return isoDate(year, Number(mm), Number(dd), raw);
   }
 
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) throw new Error(`Invalid date: ${raw}`);
-  return parsed.toISOString().slice(0, 10);
+  throw new Error(`Invalid date: ${raw}`);
 }
 
 function normalizedDescription(raw: string): string {
