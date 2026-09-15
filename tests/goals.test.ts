@@ -34,4 +34,39 @@ describe("goal projection", () => {
     expect(result.fundingGap).toBe(0);
     expect(result.requiredMonthlyContribution).toBeCloseTo(0, 6);
   });
+
+  it("rejects invalid monetary inputs, dates, and return assumptions", () => {
+    expect(() => projectGoal({
+      id: "negative",
+      name: "Negative target",
+      targetAmount: -100,
+      currentAmount: 0,
+      targetDate: "2027-01-01",
+    })).toThrow("targetAmount");
+
+    expect(() => projectGoal({
+      id: "bad-date",
+      name: "Bad date",
+      targetAmount: 1000,
+      currentAmount: 0,
+      targetDate: "2027-02-30",
+    })).toThrow("valid calendar date");
+
+    expect(() => projectGoal({
+      id: "bad-format",
+      name: "Bad format",
+      targetAmount: 1000,
+      currentAmount: 0,
+      targetDate: "February 1, 2027",
+    })).toThrow("YYYY-MM-DD");
+
+    expect(() => projectGoal({
+      id: "bad-return",
+      name: "Bad return",
+      targetAmount: 1000,
+      currentAmount: 0,
+      targetDate: "2027-01-01",
+      annualReturnAssumption: -1,
+    })).toThrow("annualReturnAssumption");
+  });
 });
