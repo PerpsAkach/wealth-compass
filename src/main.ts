@@ -23,10 +23,10 @@ app.innerHTML = `
         <input class="file-input" id="pdf-file" type="file" accept=".pdf,application/pdf" />
         <button class="button secondary" id="load-sample" type="button">Load fictional sample</button>
       </div>
-      <p class="scope">Demo only. PDF support uses a conservative generic searchable-text parser and will not recognize every bank statement layout. No bank connection, tax filing, trading, or autonomous financial advice.</p>
+      <p class="scope">Demo only. Selected statement files are processed locally in this browser and are not uploaded by this application. PDF support uses a conservative generic searchable-text parser and will not recognize every bank statement layout. No bank connection, tax filing, trading, or autonomous financial advice.</p>
     </header>
 
-    <section id="status" class="status-card">Choose a CSV/PDF file or load the fictional sample dataset.</section>
+    <section id="status" class="status-card" role="status" aria-live="polite">Choose a CSV/PDF file or load the fictional sample dataset.</section>
 
     <section id="summary" class="section hidden">
       <div class="section-heading"><span class="eyebrow">LATEST MONTH</span><h2>Cash-flow snapshot</h2></div>
@@ -40,12 +40,12 @@ app.innerHTML = `
 
     <section id="cashflow-section" class="section hidden">
       <div class="section-heading"><span class="eyebrow">HISTORY</span><h2>Monthly cash flow</h2></div>
-      <div class="table-wrap"><table><thead><tr><th>Month</th><th>Income</th><th>Expenses</th><th>Net</th><th>Margin</th></tr></thead><tbody id="cashflow-body"></tbody></table></div>
+      <div class="table-wrap"><table aria-label="Monthly cash flow"><thead><tr><th>Month</th><th>Income</th><th>Expenses</th><th>Net</th><th>Margin</th></tr></thead><tbody id="cashflow-body"></tbody></table></div>
     </section>
 
     <section id="transactions-section" class="section hidden">
       <div class="section-heading"><span class="eyebrow">NORMALIZED DATA</span><h2>Transactions</h2></div>
-      <div class="table-wrap"><table><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Direction</th><th>Amount</th></tr></thead><tbody id="transactions-body"></tbody></table></div>
+      <div class="table-wrap"><table aria-label="Normalized transactions"><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Direction</th><th>Amount</th></tr></thead><tbody id="transactions-body"></tbody></table></div>
     </section>
   </div>
 `;
